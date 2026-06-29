@@ -1,0 +1,6 @@
+# API keys
+scripts/agkes_key.txt
+
+# Python cache
+__pycache__/
+*.pyc
