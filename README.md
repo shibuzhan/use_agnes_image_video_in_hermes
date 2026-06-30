@@ -9,35 +9,32 @@
 
 > 🎨 在 **Hermes Agent** 中使用 **Agnes AI** 进行图片生成与视频生成的 Skill 配置
 
+---
+
 ## 📦 导入方法
 
-### 方式一：直接克隆到 Hermes Skills 目录
+### 方式一：克隆到 Hermes Skills 目录
 
 ```bash
-# 进入 Hermes Skills 目录
-cd ~/AppData/Local/hermes/skills/creative/
+# 进入 Hermes Skills 目录（git-bash 环境）
+cd /c/Users/你的用户名/AppData/Local/hermes/skills/creative/
 
 # 克隆仓库
 git clone https://github.com/shibuzhan/use_agnes_image_video_in_hermes.git agnes-image-gen
-
-# 配置 API Key
-echo "sk-你的API密钥" > agnes-image-gen/scripts/agkes_key.txt
 ```
 
-### 方式二：使用 Hermes Skill Hub（若已配置）
+### 方式二：手动复制
 
-```bash
-hermes skill install shibuzhan/use_agnes_image_video_in_hermes
+将 `SKILL.md`、`scripts/`、`references/` 复制到：
+
 ```
-
-### 方式三：手动复制
-
-直接将 `SKILL.md`、`scripts/`、`references/` 复制到 `~/AppData/Local/hermes/skills/creative/agnes-image-gen/` 下。
+C:\Users\你的用户名\AppData\Local\hermes\skills\creative\agnes-image-gen\
+```
 
 ### 配置 API Key
 
 ```bash
-# 在 skill 目录的 scripts/ 下创建 key 文件
+# 在 scripts/ 下创建 key 文件
 echo "sk-你的Agnes AI API密钥" > scripts/agkes_key.txt
 ```
 
@@ -88,7 +85,7 @@ cd scripts/
 # 🖼️ 文生图
 python generate.py "一只可爱的猫娘，二次元风格"
 
-# 🔄 图生图（第二参数为图片路径）
+# 🔄 图生图（第二参数为参考图路径）
 python generate.py "Takanashi Rikka cosplay, dreamy haze, motion blur" /path/to/reference.png
 ```
 
@@ -125,6 +122,7 @@ python generate.py "Takanashi Rikka cosplay, dreamy haze, motion blur" /path/to/
 
 ```python
 import requests
+import time
 
 data = {
     "model": "agnes-video-v2.0",
@@ -135,11 +133,13 @@ data = {
 }
 resp = requests.post(
     "https://apihub.agnes-ai.com/v1/videos",
-    headers=headers, json=data, timeout=180
+    headers=headers,
+    json=data,
+    timeout=180
 )
 vid = resp.json()["video_id"]
 
-# 轮询结果
+# 轮询结果（每10秒查一次）
 while True:
     resp = requests.get(
         f"https://apihub.agnes-ai.com/agnesapi?video_id={vid}&model_name=agnes-video-v2.0",
@@ -147,12 +147,14 @@ while True:
     )
     rj = resp.json()
     if rj.get("status") == "completed":
-        video_url = rj.get("remixed_from_video_id")    # 视频URL在此字段
+        video_url = rj.get("remixed_from_video_id")  # 视频URL在此字段
         # 下载视频
-        import requests as r2
         with open("output.mp4", "wb") as f:
-            f.write(r2.get(video_url).content)
+            f.write(requests.get(video_url).content)
         break
+    elif rj.get("status") == "failed":
+        raise Exception("Video generation failed")
+    time.sleep(10)
 ```
 
 ### 视频时长参考
@@ -180,10 +182,10 @@ while True:
 
 | 问题 | 原因 | 解决 |
 |------|------|------|
-| 图生图结果和原图完全无关 | `image`放在了请求体顶层 | 放到 `extra_body` 里 |
+| 图生图结果和原图完全无关 | `image` 放在了请求体顶层 | 放到 `extra_body` 里 |
 | "invalid input image" | Data URI 格式错误 | 确保格式为 `data:image/png;base64,...` |
 | 代理连接被重置 | API请求走了代理 | 仅下载资源时走代理 |
-| API key 显示为 `***DPZN` | Hermes自动mask | 文件实际内容完整，不影响运行 |
+| API key 显示为 `***DPZN` | Hermes 自动 mask | 文件实际内容完整，不影响运行 |
 
 ---
 
