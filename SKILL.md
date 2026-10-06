@@ -1,7 +1,7 @@
 ---
 name: agnes-image-gen
-description: 图片生成 + 视频生成 — Agnes AI优先（agnes-image-2.5-flash），阿里云MaaS备用
-version: 3.2.0
+description: 图片生成 + 视频生成 — Agnes AI优先（agnes-image-2.5-flash），阿里云MaaS备用；生成后必须用 vision_analyze 读图再汇报
+version: 3.3.0
 platforms: [qq]
 trigger: 用户要求生成图片/画图/作图/编辑图片/生成视频时
 metadata:
@@ -18,6 +18,7 @@ metadata:
 - **图片保存位置**：`D:\Users\shi'zhan\Pictures\agnes\`，文件名格式 `img_<uuid>.png`
 - **输出包含MEDIA路径**：脚本最后会打印 `MEDIA:<save_path>`，可直接用于发送图片
 - **代理规则**：创建API请求**不走代理**；下载图片资源**优先直连**，失败才回退代理 `127.0.0.1:7897`
+- **生成后必须读图**：拿到 `MEDIA:<path>` 后先 `vision_analyze` 看实际画面，再按看到的内容汇报（见"生成后自动读图"章节）
 
 ## 快速用法
 ```bash
@@ -41,6 +42,46 @@ python generate.py "你的提示词" --base64
 # 指定旧模型
 python generate.py "你的提示词" --model agnes-image-2.1-flash
 ```
+
+## 生成后自动读图（必做）
+
+**生成成功 ≠ 画对了。** 脚本只返回一个文件路径，看不到画面内容；不读图就直接汇报，等于盲报（实测踩过：把一张跑偏的图当成"画好了"发给用户）。
+
+流程固定为三步：
+
+```
+1. 运行 generate.py            → 得到 MEDIA:<path>
+2. vision_analyze(<path>)      → 看实际画面
+3. 按看到的内容汇报 + 发 MEDIA
+```
+
+### 检查清单
+
+调用 `vision_analyze` 时按提示词逐项核对，**用一句话问清**：
+
+| 检查项 | 说明 |
+|--------|------|
+| 主体数量 | 提示词要"五位少女"就必须数得出 5 个 |
+| 关键元素 | 提示词点名的道具/场景/动作是否真的出现 |
+| 明显崩坏 | 多手多脚、五官错位、文字乱码、结构扭曲 |
+| 风格 | 是否落在要求的画风里（如"京阿尼风格"）|
+
+### 汇报规则
+
+- **只描述实际看到的内容**，不要把提示词改写成"完成情况"复述给用户
+- 发现跑偏/崩坏 → **主动说出来**（哪一项不符），并问是否需要重画，不要藏
+- 读图失败（vision 报错）→ 明确告知"图生成好了但没能自动读图"，附路径；**绝不编造画面描述**
+- 尺寸/分辨率之类的硬指标可以直接从文件读取，不必依赖视觉模型
+
+### 配置前提
+
+- 视觉走 `auxiliary.vision`（当前 = `provider: deepseek` / `model: deepseek-flash`），**与主对话模型共用额度**，不再消耗阿里云 MaaS 计费额度
+- 该配置**在会话启动时读取**，改完必须重启网关才生效；改完先实测一张图确认，再看 `success: true`
+- 若 `auxiliary.vision.model` 与实际 provider 不匹配，报错形如 `The supported API model names are ..., but you passed <旧模型名>` —— 说明配置未生效（多半是没重启）
+
+### 视频同理
+
+视频没有直接的视觉通道：先用 `ffmpeg -ss <秒> -i out.mp4 -frames:v 1 frame.png` 抽 1–2 帧，再对帧图 `vision_analyze`，确认画面与提示词一致后再发。
 
 ## 首选方案：Agnes AI（免费/额度）
 
