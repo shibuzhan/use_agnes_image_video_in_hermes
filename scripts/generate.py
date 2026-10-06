@@ -86,10 +86,10 @@ def main():
                     help="位置参数形式的参考图 (向后兼容)")
     ap.add_argument("--image", action="append", default=[],
                     help="参考图, 可重复; 本地路径或 URL")
-    ap.add_argument("--size", default="1K",
-                    help="尺寸档位 1K/2K/3K/4K 或精确尺寸 1024x768 (默认 1K)")
-    ap.add_argument("--ratio", default=None,
-                    help="宽高比, 需配合档位式 size (1:1,16:9,9:16,...)")
+    ap.add_argument("--size", default="2K",
+                    help="尺寸档位 1K/2K/3K/4K 或精确尺寸 1024x768 (默认 2K)")
+    ap.add_argument("--ratio", default="16:9",
+                    help="宽高比, 需配合档位式 size (默认 16:9)")
     ap.add_argument("--model", default=DEFAULT_MODEL)
     ap.add_argument("--base64", action="store_true", help="以 Base64 返回")
     ap.add_argument("--count", type=int, default=1)
