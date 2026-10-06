@@ -19,29 +19,33 @@ metadata:
 - **输出包含MEDIA路径**：脚本最后会打印 `MEDIA:<save_path>`，可直接用于发送图片
 - **代理规则**：创建API请求**不走代理**；下载图片资源**优先直连**，失败才回退代理 `127.0.0.1:7897`
 - **生成后必须读图**：拿到 `MEDIA:<path>` 后先 `vision_analyze` 看实际画面，再按看到的内容汇报（见"生成后自动读图"章节）
+- **必须用 venv 的 python**：脚本依赖 `requests`，只有 Hermes venv 里有。直接用裸 `python` 会 `ModuleNotFoundError: No module named 'requests'`。固定写法见下方"快速用法"
 
 ## 快速用法
 ```bash
 cd /c/Users/"shi'zhan"/AppData/Local/hermes/skills/creative/agnes-image-gen/scripts
+PY=/c/Users/"shi'zhan"/AppData/Local/hermes/hermes-agent/venv/Scripts/python.exe   # 必须有 requests
 
 # 文生图（默认 1K，1:1）
-python generate.py "你的提示词"
+"$PY" generate.py "你的提示词"
 
 # 文生图 + 尺寸档位 + 宽高比
-python generate.py "你的提示词" --size 2K --ratio 16:9
+"$PY" generate.py "你的提示词" --size 2K --ratio 16:9
 
 # 图生图（第二位置参数为参考图，向后兼容旧用法）
-python generate.py "你的提示词" reference.png
+"$PY" generate.py "你的提示词" reference.png
 
 # 图生图 / 多图合成（显式 flag，本地路径或 URL，可重复）
-python generate.py "你的提示词" --image a.png --image b.png
+"$PY" generate.py "你的提示词" --image a.png --image b.png
 
 # Base64 输出
-python generate.py "你的提示词" --base64
+"$PY" generate.py "你的提示词" --base64
 
 # 指定旧模型
-python generate.py "你的提示词" --model agnes-image-2.1-flash
+"$PY" generate.py "你的提示词" --model agnes-image-2.1-flash
 ```
+
+> 用裸 `python` 会报 `ModuleNotFoundError: No module named 'requests'` —— Hermes 管理的 3.14 解释器没装 requests，只有 venv 有。
 
 ## 生成后自动读图（必做）
 
